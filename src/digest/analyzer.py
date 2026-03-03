@@ -1,8 +1,8 @@
 import json
+import urllib.request
+import urllib.error
 from datetime import date
 from typing import List
-
-from litellm import completion
 
 from digest.config import DigestConfig
 from digest.models import NormalizedSession, DailySummary
@@ -66,15 +66,80 @@ Example JSON output structure:
             {"role": "user", "content": f"Logs:\n{context_text}"}
         ]
 
-        response = completion(
-            model=getattr(self.config.ai, "model_override", f"{self.config.ai.provider}/{self.config.ai.model}"),
-            messages=messages,
-            api_key=self.config.ai.api_key,
-            api_base=self.config.ai.base_url,
-            response_format={"type": "json_object"}
-        )
+        provider = self.config.ai.provider.lower()
+        api_key = self.config.ai.api_key
+        base_url = self.config.ai.base_url
+        model_name = self.config.ai.model
 
-        content = response.choices[0].message.content
+        if provider == "anthropic":
+            endpoint = base_url or "https://api.anthropic.com"
+            if not endpoint.endswith("/v1/messages") and not endpoint.endswith("/messages"):
+                if not endpoint.endswith("/"):
+                    endpoint += "/"
+                endpoint += "v1/messages"
+            
+            # Anthropic expects 'system' at top level, not in messages
+            system_txt = system_prompt
+            anthropic_msgs = [{"role": "user", "content": f"Logs:\n{context_text}"}]
+            
+            payload = {
+                "model": model_name,
+                "system": system_txt,
+                "messages": anthropic_msgs,
+                "max_tokens": 4096
+            }
+            headers = {
+                "Content-Type": "application/json",
+                "x-api-key": api_key,
+                "anthropic-version": "2023-06-01"
+            }
+        else:
+            # Default to OpenAI compatible
+            endpoint = base_url or "https://api.openai.com/v1"
+            if not endpoint.endswith("/chat/completions") and not endpoint.endswith("/completions"):
+                if not endpoint.endswith("/"):
+                    endpoint += "/"
+                endpoint += "chat/completions"
+                
+            payload = {
+                "model": model_name,
+                "messages": messages,
+                "response_format": {"type": "json_object"}
+            }
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}"
+            }
+
+        req = urllib.request.Request(
+            endpoint,
+            data=json.dumps(payload).encode("utf-8"),
+            headers=headers,
+            method="POST"
+        )
+        
+        try:
+            with urllib.request.urlopen(req) as resp:
+                result = json.loads(resp.read().decode("utf-8"))
+        except urllib.error.URLError as e:
+            error_msg = str(e)
+            if hasattr(e, 'read'):
+                try:
+                    error_msg += f" - {e.read().decode('utf-8')}"
+                except Exception:
+                    pass
+            print(f"\nAPI Request Failed: {error_msg}")
+            return None
+
+        # Extract content based on provider
+        try:
+            if provider == "anthropic":
+                content = result["content"][0]["text"]
+            else:
+                content = result["choices"][0]["message"]["content"]
+        except (KeyError, IndexError):
+            print(f"\nUnexpected API response structure: {result}")
+            return None
         if not content:
             return None
 

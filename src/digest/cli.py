@@ -131,7 +131,8 @@ def cmd_analyze(args):
 
     # Output JSON representation nicely
     console.print("\n[bold magenta]🚀 Daily Summary Report[/]")
-    console.print(Panel("\n".join(f"• {h}" for h in summary.highlights), title="Highlights", border_style="yellow"))
+    highlights_items = [summary.highlights] if isinstance(summary.highlights, str) else summary.highlights
+    console.print(Panel("\n".join(f"• {h}" for h in highlights_items), title="Highlights", border_style="yellow"))
     
     for act in summary.activities:
         act_table = Table(show_header=False, show_edge=False, box=None)

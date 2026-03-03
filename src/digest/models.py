@@ -30,6 +30,6 @@ class DailySummary(BaseModel):
     """The final structured LLM daily report."""
 
     date: str
-    highlights: list[str]
+    highlights: list[str] | str
     activities: list[ActivityItem]
 
