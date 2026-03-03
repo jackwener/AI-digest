@@ -12,7 +12,7 @@ class AIConfig(BaseModel):
 class DigestConfig(BaseModel):
     ai: AIConfig
 
-def load_config(config_path: str = "~/.digest/config.yaml") -> DigestConfig:
+def load_config(config_path: str = "config.yaml") -> DigestConfig:
     path = Path(os.path.expanduser(config_path))
     if not path.exists():
         # Auto-create template if missing

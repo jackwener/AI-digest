@@ -61,9 +61,8 @@ Example JSON output structure:
             {"role": "user", "content": f"Logs:\n{context_text}"}
         ]
 
-        # Call litellm wrapper
         response = completion(
-            model=f"{self.config.ai.provider}/{self.config.ai.model}",
+            model=getattr(self.config.ai, "model_override", f"{self.config.ai.provider}/{self.config.ai.model}"),
             messages=messages,
             api_key=self.config.ai.api_key,
             api_base=self.config.ai.base_url,
@@ -74,9 +73,19 @@ Example JSON output structure:
         if not content:
             return None
 
+        # Strip markdown formatting if the model returned ```json ... ```
+        clean_content = content.strip()
+        if clean_content.startswith("```json"):
+            clean_content = clean_content[7:]
+        elif clean_content.startswith("```"):
+            clean_content = clean_content[3:]
+        if clean_content.endswith("```"):
+            clean_content = clean_content[:-3]
+        clean_content = clean_content.strip()
+
         # Parse the JSON response
         try:
-            data = json.loads(content)
+            data = json.loads(clean_content)
             return DailySummary(**data)
         except (json.JSONDecodeError, ValueError) as e:
             print(f"Failed to parse LLM response: {e}\nRaw output: {content}")

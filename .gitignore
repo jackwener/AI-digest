@@ -48,3 +48,4 @@ htmlcov/
 # uv
 .uv/
 uv.lock
+config.yaml
