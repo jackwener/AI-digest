@@ -20,12 +20,15 @@ class Analyzer:
         context_lines = []
         for s in sessions:
             time_str = s.start_time.strftime("%H:%M")
-            context_lines.append(
+            context_str = (
                 f"[{time_str}] Source: {s.source} | Project: {s.project_path or 'N/A'}\n"
-                f"Topic: {s.title_or_prompt}\n"
+                f"Title/Summary: {s.title_or_prompt}\n"
                 f"Messages: {s.message_count}\n"
-                f"---"
             )
+            if s.full_context:
+                context_str += f"Detailed Content:\n{s.full_context}\n"
+            context_str += "---"
+            context_lines.append(context_str)
         
         context_text = "\n".join(context_lines)
 

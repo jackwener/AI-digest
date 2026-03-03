@@ -22,24 +22,31 @@ class OpenCodeCollector(Collector):
 
         sessions = []
         for workspace_file in self.base_dir.glob("opencode.workspace.*.dat"):
-            session = self._parse_workspace_file(workspace_file, target_date)
-            # A single workspace file can contain multiple sessions
-            if session:
-                sessions.extend(session)
+            session_list = self._parse_workspace(workspace_file, target_date)
+            if session_list:
+                sessions.extend(session_list)
 
         return sorted(sessions, key=lambda s: s.start_time)
 
-    def _parse_workspace_file(
+    def _parse_workspace(
         self, filepath: Path, target_date: date
     ) -> List[NormalizedSession]:
         sessions = []
         try:
-            with open(filepath, "r") as f:
+            with open(filepath, "r", encoding="utf-8") as f:
                 data = json.load(f)
         except (json.JSONDecodeError, OSError):
             return []
 
         if not isinstance(data, dict):
+            return []
+
+        try:
+            mtime = datetime.fromtimestamp(filepath.stat().st_mtime, tz=timezone.utc)
+        except OSError:
+            return []
+
+        if mtime.date() != target_date:
             return []
 
         # Find all session keys
@@ -53,7 +60,7 @@ class OpenCodeCollector(Collector):
                     field_type = parts[2]
                     
                     if sess_id not in session_data:
-                        session_data[sess_id] = {"prompts": [], "mtime": None}
+                        session_data[sess_id] = {"prompts": [], "mtime": mtime}
                     
                     try:
                         val = json.loads(value_str)
@@ -66,22 +73,25 @@ class OpenCodeCollector(Collector):
                     except json.JSONDecodeError:
                         pass
 
-        # Since workspace dat files don't store distinct timestamps per session accurately inside the JSON,
-        # we will use the file's modification time as a proxy, and check if it falls on target_date.
-        try:
-            mtime = datetime.fromtimestamp(filepath.stat().st_mtime, tz=timezone.utc)
-        except OSError:
-            return []
-
-        if mtime.date() != target_date:
-            return []
-
         for sess_id, sdata in session_data.items():
             prompts = sdata["prompts"]
+            
+            first_prompt_text = ""
+            context_lines = []
+            for p in prompts:
+                if isinstance(p, str):
+                    if not first_prompt_text:
+                        first_prompt_text = p
+                    context_lines.append(f"User: {p}")
+            
             if not prompts:
-                title = f"OpenCode session"
+                title = "OpenCode session"
             else:
-                title = prompts[0][:120]
+                title = first_prompt_text[:120]
+                
+            full_context = "\n".join(context_lines)
+            if len(full_context) > 20000:
+                full_context = full_context[:20000] + "\n...[Truncated]"
 
             sessions.append(
                 NormalizedSession(
@@ -92,6 +102,7 @@ class OpenCodeCollector(Collector):
                     end_time=mtime,
                     title_or_prompt=title,
                     message_count=len(prompts),
+                    full_context=full_context,
                 )
             )
 

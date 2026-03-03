@@ -42,13 +42,24 @@ class CodexCollector(Collector):
         except (ValueError, IndexError):
             return None
 
+    def _extract_timestamp_from_record(self, obj: dict) -> datetime | None:
+        ts_str = obj.get("timestamp")
+        if ts_str:
+            try:
+                # Handle 'Z' for UTC timezone
+                return datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
+            except ValueError:
+                pass
+        return None
+
     def _parse_session(
         self, filepath: Path, target_date: date
     ) -> NormalizedSession | None:
-        meta = {}
-        first_prompt = ""
+        messages_count = 0
         timestamps = []
-        msg_count = 0
+        first_prompt = ""
+        project_path = ""
+        context_lines = []
 
         try:
             with open(filepath, "r") as f:
@@ -61,24 +72,26 @@ class CodexCollector(Collector):
                     except json.JSONDecodeError:
                         continue
 
+                    ts = self._extract_timestamp_from_record(obj)
+                    if ts:
+                        timestamps.append(ts)
+
+                    # Codex specific: extract project from metadata
+                    if "metadata" in obj and "cwd" in obj["metadata"]:
+                        if not project_path:
+                            # Use basename of cwd as project name
+                            project_path = Path(obj["metadata"]["cwd"]).name
+
                     msg_type = obj.get("type", "")
-                    ts_str = obj.get("timestamp")
-
-                    if ts_str:
-                        try:
-                            ts = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
-                            timestamps.append(ts)
-                        except ValueError:
-                            pass
-
-                    if msg_type == "session_meta":
-                        meta = obj.get("payload", {})
-                    elif msg_type == "message":
-                        msg_count += 1
-                        payload = obj.get("payload", {})
-                        if isinstance(payload, dict) and payload.get("role") == "user":
-                            if not first_prompt:
-                                first_prompt = self._extract_content(payload)
+                    if msg_type in ("human", "assistant"):
+                        messages_count += 1
+                        content = self._extract_content(obj.get("message", {}))
+                        if content:
+                            role = "User" if msg_type == "human" else "AI"
+                            context_lines.append(f"{role}: {content}")
+                        
+                        if msg_type == "human" and not first_prompt:
+                            first_prompt = content
 
         except (OSError, IOError):
             return None
@@ -89,20 +102,25 @@ class CodexCollector(Collector):
         start_time = min(timestamps)
         end_time = max(timestamps)
 
+        # Codex date is in filename, but double check with content timestamps
         if start_time.date() != target_date and end_time.date() != target_date:
             return None
 
-        project = self._parse_project(meta.get("cwd", ""))
-        session_id = meta.get("id", filepath.stem)
+        title = first_prompt[:120] if first_prompt else ""
+        
+        full_context = "\n".join(context_lines)
+        if len(full_context) > 20000:
+            full_context = full_context[:20000] + "\n...[Truncated]"
 
         return NormalizedSession(
-            id=session_id,
+            id=filepath.stem,
             source=self.source_name,
-            project_path=project,
+            project_path=project_path,
             start_time=start_time,
             end_time=end_time,
-            title_or_prompt=first_prompt[:120] if first_prompt else "Codex session",
-            message_count=msg_count,
+            title_or_prompt=title,
+            message_count=messages_count,
+            full_context=full_context,
         )
 
     def _parse_project(self, cwd: str) -> str:

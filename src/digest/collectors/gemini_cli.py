@@ -68,4 +68,5 @@ class GeminiCliCollector(Collector):
             end_time=mtime,
             title_or_prompt=f"Gemini CLI session in {project_name}",
             message_count=0,
+            full_context="No expanded logs currently available offline for Gemini CLI.",
         )

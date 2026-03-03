@@ -50,6 +50,7 @@ class AntigravityCollector(Collector):
         session_id = session_dir.name
         timestamps = []
         title = ""
+        context_lines = []
 
         artifact_files = list(session_dir.glob("*.metadata.json"))
         for meta_file in artifact_files:
@@ -77,15 +78,21 @@ class AntigravityCollector(Collector):
                 mtime = datetime.fromtimestamp(md_file.stat().st_mtime, tz=timezone.utc)
                 timestamps.append(mtime)
 
+                with open(md_file) as f:
+                    content_text = f.read()
+                    
+                context_lines.append(f"Artifact Context [File: {md_file.name}]:")
+                context_lines.append(content_text)
+                
                 if not title:
-                    with open(md_file) as f:
-                        for i, line in enumerate(f):
-                            if i >= 5:
-                                break
-                            line = line.strip()
-                            if line.startswith("# "):
-                                title = line[2:].strip()[:120]
-                                break
+                    lines = content_text.splitlines()
+                    for i, line in enumerate(lines):
+                        if i >= 5:
+                            break
+                        line = line.strip()
+                        if line.startswith("# "):
+                            title = line[2:].strip()[:120]
+                            break
             except OSError:
                 continue
 
@@ -98,6 +105,12 @@ class AntigravityCollector(Collector):
                             log_file.stat().st_mtime, tz=timezone.utc
                         )
                         timestamps.append(mtime)
+                        
+                        # specifically target overview.txt for user requests
+                        if log_file.name == "overview.txt":
+                            with open(log_file) as f:
+                                context_lines.append("Activity Log Profile:")
+                                context_lines.append(f.read())
                     except OSError:
                         pass
 
@@ -116,6 +129,10 @@ class AntigravityCollector(Collector):
         if start_time.date() != target_date and end_time.date() != target_date:
             return None
 
+        full_context = "\n".join(context_lines)
+        if len(full_context) > 20000:
+            full_context = full_context[:20000] + "\n...[Truncated]"
+
         return NormalizedSession(
             id=session_id,
             source=self.source_name,
@@ -124,6 +141,7 @@ class AntigravityCollector(Collector):
             end_time=end_time,
             title_or_prompt=title or f"Antigravity session",
             message_count=len(md_files),
+            full_context=full_context,
         )
 
     def _parse_from_pb_metadata(

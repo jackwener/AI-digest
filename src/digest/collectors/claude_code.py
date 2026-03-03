@@ -45,10 +45,11 @@ class ClaudeCodeCollector(Collector):
     def _parse_session(
         self, filepath: Path, project: str, target_date: date
     ) -> NormalizedSession | None:
-        messages = 0
+        messages_count = 0
         timestamps = []
         first_prompt = ""
         summary_text = ""
+        context_lines = []
 
         try:
             with open(filepath, "r") as f:
@@ -67,9 +68,14 @@ class ClaudeCodeCollector(Collector):
                         timestamps.append(ts)
 
                     if msg_type in ("human", "assistant"):
-                        messages += 1
+                        messages_count += 1
+                        content = self._extract_content(obj.get("message", {}))
+                        if content:
+                            role = "User" if msg_type == "human" else "AI"
+                            context_lines.append(f"{role}: {content}")
+                            
                         if msg_type == "human" and not first_prompt:
-                            first_prompt = self._extract_content(obj.get("message", {}))
+                            first_prompt = content
 
                     elif msg_type == "summary":
                         summary_text = obj.get("summary", "")
@@ -87,6 +93,11 @@ class ClaudeCodeCollector(Collector):
             return None
 
         title = summary_text[:120] if summary_text else first_prompt[:120]
+        
+        # Limit extracted context size to avoid blowing up LLM windows
+        full_context = "\n".join(context_lines)
+        if len(full_context) > 20000:
+            full_context = full_context[:20000] + "\n...[Truncated]"
 
         return NormalizedSession(
             id=filepath.stem,
@@ -95,7 +106,8 @@ class ClaudeCodeCollector(Collector):
             start_time=start_time,
             end_time=end_time,
             title_or_prompt=title,
-            message_count=messages,
+            message_count=messages_count,
+            full_context=full_context,
         )
 
     def _extract_timestamp(self, obj: dict) -> datetime | None:

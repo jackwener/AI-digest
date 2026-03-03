@@ -13,6 +13,7 @@ class NormalizedSession(BaseModel):
     end_time: datetime
     title_or_prompt: str = ""
     message_count: int = 0
+    full_context: str = ""
 
 
 class ActivityItem(BaseModel):
