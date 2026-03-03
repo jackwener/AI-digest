@@ -20,8 +20,9 @@ class Analyzer:
         context_lines = []
         for s in sessions:
             time_str = s.start_time.strftime("%H:%M")
+            project_str = f" | Project: {s.project_path}" if s.project_path else ""
             context_str = (
-                f"[{time_str}] Source: {s.source} | Project: {s.project_path or 'N/A'}\n"
+                f"[{time_str}] Source: {s.source}{project_str}\n"
                 f"Title/Summary: {s.title_or_prompt}\n"
                 f"Messages: {s.message_count}\n"
             )
@@ -40,8 +41,9 @@ Rules:
 1. Ignore trivial pings (e.g., just saying "hi" or empty chats).
 2. Cluster related sessions chronologically or by project into cohesive "Activities".
 3. An activity should describe the meaningful work done (e.g., "Implemented feature X in project Y", "Researched concepts about Z").
-4. Provide a 1-2 sentence overall highlight for the day.
-5. You MUST output your response in valid JSON matching the schema of the DailySummary. Do not include markdown codeblocks or extra text.
+4. If a project name is missing or "N/A" in the logs, you MUST carefully try to infer the relevant project or repository name from the activity's context or topic (e.g., "mega-reth", "blog", "digest"). If you absolutely cannot infer any project name, output "-" instead of "N/A" or "None".
+5. Provide a 1-2 sentence overall highlight for the day.
+6. You MUST output your response in valid JSON matching the schema of the DailySummary. Do not include markdown codeblocks or extra text.
 
 Example JSON output structure:
 {{
