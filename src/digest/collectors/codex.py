@@ -9,7 +9,7 @@ from digest.models import NormalizedSession
 
 
 class CodexCollector(Collector):
-    def __init__(self, base_dir: str = "~/.codex/archived_sessions"):
+    def __init__(self, base_dir: str = "~/.codex"):
         self.base_dir = Path(os.path.expanduser(base_dir))
 
     @property
@@ -21,7 +21,7 @@ class CodexCollector(Collector):
             return []
 
         sessions = []
-        for jsonl_file in self.base_dir.glob("rollout-*.jsonl"):
+        for jsonl_file in self.base_dir.rglob("rollout-*.jsonl"):
             # Format: rollout-YYYY-MM-DDTHH-MM-SS-...
             fname = jsonl_file.stem
             file_date = self._extract_date_from_filename(fname)
@@ -76,22 +76,27 @@ class CodexCollector(Collector):
                     if ts:
                         timestamps.append(ts)
 
-                    # Codex specific: extract project from metadata
-                    if "metadata" in obj and "cwd" in obj["metadata"]:
-                        if not project_path:
-                            # Use basename of cwd as project name
-                            project_path = Path(obj["metadata"]["cwd"]).name
-
                     msg_type = obj.get("type", "")
-                    if msg_type in ("human", "assistant"):
-                        messages_count += 1
-                        content = self._extract_content(obj.get("message", {}))
-                        if content:
-                            role = "User" if msg_type == "human" else "AI"
-                            context_lines.append(f"{role}: {content}")
-                        
-                        if msg_type == "human" and not first_prompt:
-                            first_prompt = content
+                    
+                    # Codex specific: extract project from metadata payload
+                    if msg_type == "session_meta":
+                        meta = obj.get("payload", {})
+                        if "cwd" in meta and not project_path:
+                            project_path = Path(meta["cwd"]).name
+                            
+                    elif msg_type == "response_item":
+                        payload = obj.get("payload", {})
+                        if isinstance(payload, dict) and payload.get("type") == "message":
+                            role = payload.get("role")
+                            if role in ("user", "assistant"):
+                                messages_count += 1
+                                content = self._extract_content(payload)
+                                if content:
+                                    role_name = "User" if role == "user" else "AI"
+                                    context_lines.append(f"{role_name}: {content}")
+                                
+                                if role == "user" and not first_prompt:
+                                    first_prompt = content
 
         except (OSError, IOError):
             return None
