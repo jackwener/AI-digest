@@ -4,7 +4,12 @@ version = "0.1.0"
 description = "AI Agent Data Collector"
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = ["pydantic>=2.9.2", "rich>=13.9.4"]
+dependencies = [
+    "litellm>=1.82.0",
+    "pydantic>=2.9.2",
+    "pyyaml>=6.0.3",
+    "rich>=13.9.4",
+]
 
 [project.scripts]
 digest = "digest.cli:main"

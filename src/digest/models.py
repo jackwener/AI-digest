@@ -13,3 +13,22 @@ class NormalizedSession(BaseModel):
     end_time: datetime
     title_or_prompt: str = ""
     message_count: int = 0
+
+
+class ActivityItem(BaseModel):
+    """A high-level clustered activity deduced by LLM."""
+
+    time_range: str
+    project: str
+    category: str
+    summary: str
+    details: list[str]
+
+
+class DailySummary(BaseModel):
+    """The final structured LLM daily report."""
+
+    date: str
+    highlights: list[str]
+    activities: list[ActivityItem]
+
