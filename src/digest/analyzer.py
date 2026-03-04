@@ -59,7 +59,7 @@ JSON 输出格式示例：
       "summary": "实现了基于 LLM 的每日活动分析引擎",
       "details": [
         "编写了 config.yaml 配置解析逻辑，支持 api_key / model / base_url / provider",
-        "引入 litellm 依赖并封装 completion 调用",
+        "基于 urllib 封装了 OpenAI / Anthropic 兼容的 HTTP 请求",
         "设计了 DailySummary / ActivityItem Pydantic 模型",
         "编写 system prompt 约束 JSON 输出格式",
         "添加了 markdown 代码块自动剥离逻辑以兼容不规范模型输出"
