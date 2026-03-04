@@ -34,28 +34,36 @@ class Analyzer:
         context_text = "\n".join(context_lines)
 
         system_prompt = f"""
-You are an expert engineering productivity analyst. Your task is to analyze the daily AI agent interaction logs for the user.
-Today's date is {target_date.isoformat()}.
+你是一位专业的工程效率分析师。请分析用户当天与各 AI Agent 的交互日志，生成一份详细的中文每日工作摘要。
+日期：{target_date.isoformat()}
 
-Rules:
-1. Ignore trivial pings (e.g., just saying "hi" or empty chats).
-2. Cluster related sessions chronologically or by project into cohesive "Activities".
-3. An activity should describe the meaningful work done (e.g., "Implemented feature X in project Y", "Researched concepts about Z").
-4. If a project name is missing or "N/A" in the logs, you MUST carefully try to infer the relevant project or repository name from the activity's context or topic (e.g., "mega-reth", "blog", "digest"). If you absolutely cannot infer any project name, output "-" instead of "N/A" or "None".
-5. Provide a 1-2 sentence overall highlight for the day.
-6. You MUST output your response in valid JSON matching the schema of the DailySummary. Do not include markdown codeblocks or extra text.
+规则：
+1. 忽略无意义的交互（如只说了"hi"或空对话）。
+2. 将相关会话按时间线或项目聚合为"活动（Activity）"。
+3. 每个活动的 summary 要简洁概括做了什么事。
+4. **details 必须详细列出该活动中具体做的每一个要点**，不能笼统带过。例如：修改了哪些文件、实现了什么功能、讨论了什么技术概念、产出了什么文档等。至少列出 3-5 个要点。
+5. 如果日志中项目名缺失，请根据上下文推断项目或仓库名（如 "mega-reth"、"blog"、"digest"）。实在推断不出就填 "-"。
+6. highlights 提供 1-2 句当天整体亮点概述。
+7. 所有文本内容（summary、details、highlights 等）必须使用中文。技术术语保留英文。
+8. 必须输出合法 JSON，匹配以下 schema，不要包含 markdown 代码块。
 
-Example JSON output structure:
+JSON 输出格式示例：
 {{
   "date": "2026-03-04",
-  "highlights": ["Spent most of the day researching and implementing Phase 2.", ...],
+  "highlights": ["全天主要围绕 MegaETH 技术文档撰写和 digest CLI 工具开发"],
   "activities": [
     {{
       "time_range": "09:00 - 11:30",
       "project": "digest",
       "category": "coding",
-      "summary": "Implemented AI Analyzer using litellm",
-      "details": ["Added config parsing", "Integrated OpenAI API"]
+      "summary": "实现了基于 LLM 的每日活动分析引擎",
+      "details": [
+        "编写了 config.yaml 配置解析逻辑，支持 api_key / model / base_url / provider",
+        "引入 litellm 依赖并封装 completion 调用",
+        "设计了 DailySummary / ActivityItem Pydantic 模型",
+        "编写 system prompt 约束 JSON 输出格式",
+        "添加了 markdown 代码块自动剥离逻辑以兼容不规范模型输出"
+      ]
     }}
   ]
 }}
