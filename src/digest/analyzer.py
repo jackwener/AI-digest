@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import json
 import urllib.request
 import urllib.error
 from datetime import date
-from typing import List
+from typing import List, Optional
 
 from digest.config import DigestConfig
 from digest.models import NormalizedSession, DailySummary
@@ -12,7 +14,7 @@ class Analyzer:
     def __init__(self, config: DigestConfig):
         self.config = config
 
-    def analyze(self, target_date: date, sessions: List[NormalizedSession]) -> DailySummary | None:
+    def analyze(self, target_date: date, sessions: List[NormalizedSession]) -> Optional[DailySummary]:
         if not sessions:
             return None
 

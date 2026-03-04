@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from datetime import date, datetime, timezone
-from typing import Optional
+from typing import List, Optional, Union
 from pydantic import BaseModel
 
 # System local timezone for display and date filtering
@@ -33,13 +35,13 @@ class ActivityItem(BaseModel):
     project: str
     category: str
     summary: str
-    details: list[str]
+    details: List[str]
 
 
 class DailySummary(BaseModel):
     """The final structured LLM daily report."""
 
     date: str
-    highlights: list[str] | str
+    highlights: Union[List[str], str]
     activities: list[ActivityItem]
 

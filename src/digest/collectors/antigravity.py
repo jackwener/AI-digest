@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import json
 import os
 from datetime import date, datetime, timezone
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 from digest.collectors.base import Collector
 from digest.models import NormalizedSession, to_local
@@ -46,7 +48,7 @@ class AntigravityCollector(Collector):
 
     def _parse_from_brain(
         self, session_dir: Path, target_date: date
-    ) -> NormalizedSession | None:
+    ) -> Optional[NormalizedSession]:
         session_id = session_dir.name
         timestamps = []
         title = ""
@@ -162,7 +164,7 @@ class AntigravityCollector(Collector):
 
     def _parse_from_pb_metadata(
         self, pb_file: Path, target_date: date
-    ) -> NormalizedSession | None:
+    ) -> Optional[NormalizedSession]:
         try:
             stat = pb_file.stat()
             mtime = to_local(datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc))
@@ -183,7 +185,7 @@ class AntigravityCollector(Collector):
             message_count=0,
         )
 
-    def _parse_ts(self, value) -> datetime | None:
+    def _parse_ts(self, value) -> Optional[datetime]:
         if isinstance(value, (int, float)):
             try:
                 return datetime.fromtimestamp(value / 1000, tz=timezone.utc)

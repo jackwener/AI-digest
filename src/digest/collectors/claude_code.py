@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import json
 import os
 from datetime import date, datetime, timezone
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 from digest.collectors.base import Collector
 from digest.models import NormalizedSession, to_local
@@ -44,7 +46,7 @@ class ClaudeCodeCollector(Collector):
 
     def _parse_session(
         self, filepath: Path, project: str, target_date: date
-    ) -> NormalizedSession | None:
+    ) -> Optional[NormalizedSession]:
         messages_count = 0
         timestamps = []
         first_prompt = ""
@@ -110,7 +112,7 @@ class ClaudeCodeCollector(Collector):
             full_context=full_context,
         )
 
-    def _extract_timestamp(self, obj: dict) -> datetime | None:
+    def _extract_timestamp(self, obj: dict) -> Optional[datetime]:
         for field in ("timestamp", "cacheBreaker"):
             val = obj.get(field)
             if isinstance(val, str):

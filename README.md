@@ -92,7 +92,7 @@ Activity Timeline
 
 ## 技术栈
 
-- Python 3.11+
+- Python 3.8+
 - [Pydantic](https://docs.pydantic.dev/) — 数据模型验证
 - [Rich](https://rich.readthedocs.io/) — 终端美化输出
 - [PyYAML](https://pyyaml.org/) — 配置文件解析

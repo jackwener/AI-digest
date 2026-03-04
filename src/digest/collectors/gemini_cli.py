@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import os
 from datetime import date, datetime, timezone
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 from digest.collectors.base import Collector
 from digest.models import NormalizedSession, to_local
@@ -34,7 +36,7 @@ class GeminiCliCollector(Collector):
 
     def _parse_from_dir_mtime(
         self, project_dir: Path, target_date: date
-    ) -> NormalizedSession | None:
+    ) -> Optional[NormalizedSession]:
         try:
             mtime = to_local(datetime.fromtimestamp(
                 project_dir.stat().st_mtime, tz=timezone.utc

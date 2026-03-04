@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import json
 import os
 from datetime import date, datetime, timezone
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 from digest.collectors.base import Collector
 from digest.models import NormalizedSession, to_local
@@ -34,7 +36,7 @@ class CodexCollector(Collector):
 
         return sorted(sessions, key=lambda s: s.start_time)
 
-    def _extract_date_from_filename(self, filename: str) -> date | None:
+    def _extract_date_from_filename(self, filename: str) -> Optional[date]:
         try:
             parts = filename.replace("rollout-", "")
             date_str = parts[:10]  # "YYYY-MM-DD"
@@ -42,7 +44,7 @@ class CodexCollector(Collector):
         except (ValueError, IndexError):
             return None
 
-    def _extract_timestamp_from_record(self, obj: dict) -> datetime | None:
+    def _extract_timestamp_from_record(self, obj: dict) -> Optional[datetime]:
         ts_str = obj.get("timestamp")
         if ts_str:
             try:
@@ -54,7 +56,7 @@ class CodexCollector(Collector):
 
     def _parse_session(
         self, filepath: Path, target_date: date
-    ) -> NormalizedSession | None:
+    ) -> Optional[NormalizedSession]:
         messages_count = 0
         timestamps = []
         first_prompt = ""

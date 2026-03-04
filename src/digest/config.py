@@ -1,12 +1,15 @@
+from __future__ import annotations
+
 import os
 import yaml
 from pathlib import Path
+from typing import Optional
 from pydantic import BaseModel
 
 class AIConfig(BaseModel):
     api_key: str
     model: str = "gpt-4o-mini"
-    base_url: str | None = None
+    base_url: Optional[str] = None
     provider: str = "openai"
 
 class DigestConfig(BaseModel):
