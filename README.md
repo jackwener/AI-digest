@@ -2,7 +2,7 @@
 
 一个本地优先的 CLI 工具，自动采集你每天使用各种 AI 编程助手的会话记录，生成结构化的每日工作摘要。
 
-## ✨ 特性
+## 特性
 
 - **多源数据采集** — 支持 5 种主流 AI 编程工具的本地日志解析
   - [Claude Code](https://claude.ai) (JSONL)
@@ -14,7 +14,7 @@
 - **零外部依赖调用** — 使用 Python 原生 `urllib` 直接调用 OpenAI / Anthropic 兼容 API
 - **本地时区感知** — 自动将 UTC 时间戳转换为系统本地时区
 
-## 📦 安装
+## 安装
 
 ```bash
 # 推荐使用 uv
@@ -24,7 +24,7 @@ uv sync
 pip install -e .
 ```
 
-## 🚀 使用
+## 使用
 
 ### 采集会话数据
 
@@ -43,7 +43,7 @@ digest collect --date 2026-03-03
 digest analyze --date 2026-03-03
 ```
 
-## ⚙️ 配置
+## 配置
 
 复制示例配置文件并填入你的 LLM API 信息：
 
@@ -61,7 +61,7 @@ ai:
 
 支持任何 OpenAI 或 Anthropic 兼容的 API 服务。
 
-## 📁 数据源路径
+## 数据源路径
 
 | 工具 | 本地日志路径 | 格式 |
 |------|-------------|------|
@@ -71,7 +71,7 @@ ai:
 | OpenCode | `~/Library/Application Support/ai.opencode.desktop/` | JSON DAT |
 | Gemini CLI | `~/.gemini/history/` | Directory mtime |
 
-## 📊 输出示例
+## 输出示例
 
 ### `digest collect`
 ```
@@ -90,7 +90,7 @@ Activity Timeline
 - **Highlights** — 当天工作亮点概述
 - **Activities** — 按时间线聚合的活动卡片，含项目、分类、详细要点
 
-## 🛠️ 技术栈
+## 技术栈
 
 - Python 3.11+
 - [Pydantic](https://docs.pydantic.dev/) — 数据模型验证
@@ -98,6 +98,6 @@ Activity Timeline
 - [PyYAML](https://pyyaml.org/) — 配置文件解析
 - `urllib` — 零依赖 HTTP 请求
 
-## 📝 License
+## License
 
 MIT
