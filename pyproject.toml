@@ -1,7 +1,7 @@
 [project]
-name = "digest"
+name = "ai-digest"
 version = "0.1.0"
-description = "AI Agent Data Collector"
+description = "AI Agent Daily Digest — Collect and analyze your AI coding assistant usage"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = ["pydantic>=2.9.2", "pyyaml>=6.0.3", "rich>=13.9.4"]
