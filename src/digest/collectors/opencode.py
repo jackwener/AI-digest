@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import List
 
 from digest.collectors.base import Collector
-from digest.models import NormalizedSession
+from digest.models import NormalizedSession, to_local
 
 
 class OpenCodeCollector(Collector):
@@ -42,7 +42,7 @@ class OpenCodeCollector(Collector):
             return []
 
         try:
-            mtime = datetime.fromtimestamp(filepath.stat().st_mtime, tz=timezone.utc)
+            mtime = to_local(datetime.fromtimestamp(filepath.stat().st_mtime, tz=timezone.utc))
         except OSError:
             return []
 

@@ -1,6 +1,16 @@
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import Optional
 from pydantic import BaseModel
+
+# System local timezone for display and date filtering
+LOCAL_TZ = datetime.now().astimezone().tzinfo
+
+
+def to_local(dt: datetime) -> datetime:
+    """Convert a UTC-aware datetime to system local timezone."""
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(LOCAL_TZ)
 
 
 class NormalizedSession(BaseModel):

@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import List
 
 from digest.collectors.base import Collector
-from digest.models import NormalizedSession
+from digest.models import NormalizedSession, to_local
 
 
 class AntigravityCollector(Collector):
@@ -123,8 +123,8 @@ class AntigravityCollector(Collector):
             except OSError:
                 return None
 
-        start_time = min(timestamps)
-        end_time = max(timestamps)
+        start_time = to_local(min(timestamps))
+        end_time = to_local(max(timestamps))
 
         if start_time.date() != target_date and end_time.date() != target_date:
             return None
@@ -149,8 +149,8 @@ class AntigravityCollector(Collector):
     ) -> NormalizedSession | None:
         try:
             stat = pb_file.stat()
-            mtime = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc)
-            ctime = datetime.fromtimestamp(stat.st_birthtime, tz=timezone.utc)
+            mtime = to_local(datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc))
+            ctime = to_local(datetime.fromtimestamp(stat.st_birthtime, tz=timezone.utc))
         except (OSError, AttributeError):
             return None
 

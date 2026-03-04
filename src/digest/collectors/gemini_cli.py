@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import List
 
 from digest.collectors.base import Collector
-from digest.models import NormalizedSession
+from digest.models import NormalizedSession, to_local
 
 
 class GeminiCliCollector(Collector):
@@ -36,9 +36,9 @@ class GeminiCliCollector(Collector):
         self, project_dir: Path, target_date: date
     ) -> NormalizedSession | None:
         try:
-            mtime = datetime.fromtimestamp(
+            mtime = to_local(datetime.fromtimestamp(
                 project_dir.stat().st_mtime, tz=timezone.utc
-            )
+            ))
         except OSError:
             return None
 
@@ -47,7 +47,7 @@ class GeminiCliCollector(Collector):
             has_activity = False
             try:
                 for f in project_dir.glob("*"):
-                    fmtime = datetime.fromtimestamp(f.stat().st_mtime, tz=timezone.utc)
+                    fmtime = to_local(datetime.fromtimestamp(f.stat().st_mtime, tz=timezone.utc))
                     if fmtime.date() == target_date:
                         has_activity = True
                         mtime = fmtime

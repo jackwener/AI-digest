@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import List
 
 from digest.collectors.base import Collector
-from digest.models import NormalizedSession
+from digest.models import NormalizedSession, to_local
 
 
 class ClaudeCodeCollector(Collector):
@@ -86,8 +86,8 @@ class ClaudeCodeCollector(Collector):
         if not timestamps:
             return None
 
-        start_time = min(timestamps)
-        end_time = max(timestamps)
+        start_time = to_local(min(timestamps))
+        end_time = to_local(max(timestamps))
 
         if start_time.date() != target_date and end_time.date() != target_date:
             return None
