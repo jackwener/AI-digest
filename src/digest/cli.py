@@ -78,7 +78,9 @@ def cmd_collect(args):
     }
 
     for s in sessions:
-        time_str = s.start_time.strftime("%H:%M")
+        start_str = s.start_time.strftime("%H:%M")
+        end_str = s.end_time.strftime("%H:%M")
+        time_str = f"{start_str} - {end_str}" if start_str != end_str else start_str
         color = source_colors.get(s.source, "white")
         title = s.title_or_prompt.replace("\n", " ").strip()
         if len(title) > 80:
