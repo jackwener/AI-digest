@@ -50,7 +50,9 @@ class AntigravityCollector(Collector):
         session_id = session_dir.name
         timestamps = []
         title = ""
+        project_path = ""
         context_lines = []
+        summaries = []
 
         artifact_files = list(session_dir.glob("*.metadata.json"))
         for meta_file in artifact_files:
@@ -65,10 +67,16 @@ class AntigravityCollector(Collector):
                         if ts:
                             timestamps.append(ts)
 
-                if meta.get("artifactType") and not title:
-                    title = f'{meta["artifactType"]}: {meta.get("summary", "")[:80]}'
+                summary = meta.get("summary", "")
+                if summary:
+                    summaries.append(summary)
             except (json.JSONDecodeError, OSError):
                 continue
+
+        # Build title from summaries (prefer the longest/most descriptive one)
+        if summaries:
+            best_summary = max(summaries, key=len)
+            title = best_summary[:150]
 
         md_files = list(session_dir.glob("*.md"))
         for md_file in md_files:
@@ -109,8 +117,16 @@ class AntigravityCollector(Collector):
                         # specifically target overview.txt for user requests
                         if log_file.name == "overview.txt":
                             with open(log_file) as f:
+                                overview_text = f.read()
                                 context_lines.append("Activity Log Profile:")
-                                context_lines.append(f.read())
+                                context_lines.append(overview_text)
+                                # Try to extract project from workspace URIs in overview
+                                for oline in overview_text.splitlines():
+                                    if "/Users/" in oline and "/code/" in oline:
+                                        parts = oline.split("/code/")
+                                        if len(parts) > 1:
+                                            project_path = parts[1].split("/")[0].split()[0]
+                                            break
                     except OSError:
                         pass
 
@@ -136,7 +152,7 @@ class AntigravityCollector(Collector):
         return NormalizedSession(
             id=session_id,
             source=self.source_name,
-            project_path="",
+            project_path=project_path,
             start_time=start_time,
             end_time=end_time,
             title_or_prompt=title or f"Antigravity session",
