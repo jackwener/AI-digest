@@ -1,7 +1,7 @@
 import json
 import os
 import sqlite3
-from datetime import date, datetime, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
 from typing import List, Tuple
 
@@ -23,28 +23,28 @@ class OpenCodeCollector(Collector):
         return "OpenCode"
 
     def collect(self, target_date: date) -> List[NormalizedSession]:
-        sessions: List[NormalizedSession] = []
+        deduped = {}
 
         if self.db_path.exists():
-            sessions.extend(self._collect_from_sqlite(target_date))
+            for session in self._collect_from_sqlite(target_date):
+                deduped[session.id] = session
 
         if self.legacy_base_dir.exists():
             for workspace_file in self.legacy_base_dir.glob("opencode.workspace.*.dat"):
                 session_list = self._parse_workspace(workspace_file, target_date)
                 if session_list:
-                    sessions.extend(session_list)
-
-        deduped = {}
-        for s in sessions:
-            prev = deduped.get(s.id)
-            if prev is None or s.end_time > prev.end_time:
-                deduped[s.id] = s
+                    for session in session_list:
+                        deduped.setdefault(session.id, session)
 
         return sorted(deduped.values(), key=lambda s: s.start_time)
 
     def _collect_from_sqlite(self, target_date: date) -> List[NormalizedSession]:
         sessions = []
-        target_date_str = target_date.isoformat()
+        local_tz = datetime.now().astimezone().tzinfo or timezone.utc
+        day_start_local = datetime.combine(target_date, time.min, tzinfo=local_tz)
+        next_day_local = day_start_local + timedelta(days=1)
+        day_start_ms = int(day_start_local.astimezone(timezone.utc).timestamp() * 1000)
+        next_day_ms = int(next_day_local.astimezone(timezone.utc).timestamp() * 1000)
 
         try:
             conn = sqlite3.connect(str(self.db_path))
@@ -71,11 +71,11 @@ class OpenCodeCollector(Collector):
                         0
                     ) AS message_count
                 FROM session s
-                WHERE DATE(DATETIME(s.time_created / 1000, 'unixepoch', 'localtime')) = ?
-                   OR DATE(DATETIME(s.time_updated / 1000, 'unixepoch', 'localtime')) = ?
+                WHERE s.time_created < ?
+                  AND s.time_updated >= ?
                 ORDER BY s.time_created ASC
                 """,
-                (target_date_str, target_date_str),
+                (next_day_ms, day_start_ms),
             ).fetchall()
 
             for row in rows:
