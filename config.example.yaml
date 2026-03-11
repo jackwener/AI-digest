@@ -1,5 +1,5 @@
 ai:
   api_key: "YOUR_API_KEY"
-  model: "gpt-4o-mini"
-  base_url: "https://api.openai.com/v1"  # optional, for custom endpoints
-  provider: "openai"                      # openai | anthropic
+  model: "claude-3-7-sonnet-latest"
+  base_url: null  # optional, defaults by provider
+  provider: "anthropic"  # openai | anthropic

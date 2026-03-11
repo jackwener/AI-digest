@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import List, Optional
 
 from digest.collectors.base import Collector
-from digest.models import NormalizedSession, to_local
+from digest.models import NormalizedSession, overlaps_target_date, to_local
 
 
 class ClaudeCodeCollector(Collector):
@@ -91,7 +91,7 @@ class ClaudeCodeCollector(Collector):
         start_time = to_local(min(timestamps))
         end_time = to_local(max(timestamps))
 
-        if start_time.date() != target_date and end_time.date() != target_date:
+        if not overlaps_target_date(start_time, end_time, target_date):
             return None
 
         title = summary_text[:120] if summary_text else first_prompt[:120]

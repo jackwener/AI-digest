@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import List, Optional
 
 from digest.collectors.base import Collector
-from digest.models import NormalizedSession, to_local
+from digest.models import NormalizedSession, overlaps_target_date, to_local
 
 
 class CodexCollector(Collector):
@@ -24,25 +24,11 @@ class CodexCollector(Collector):
 
         sessions = []
         for jsonl_file in self.base_dir.rglob("rollout-*.jsonl"):
-            # Format: rollout-YYYY-MM-DDTHH-MM-SS-...
-            fname = jsonl_file.stem
-            file_date = self._extract_date_from_filename(fname)
-            if file_date and file_date != target_date:
-                continue
-
             session = self._parse_session(jsonl_file, target_date)
             if session:
                 sessions.append(session)
 
         return sorted(sessions, key=lambda s: s.start_time)
-
-    def _extract_date_from_filename(self, filename: str) -> Optional[date]:
-        try:
-            parts = filename.replace("rollout-", "")
-            date_str = parts[:10]  # "YYYY-MM-DD"
-            return date.fromisoformat(date_str)
-        except (ValueError, IndexError):
-            return None
 
     def _extract_timestamp_from_record(self, obj: dict) -> Optional[datetime]:
         ts_str = obj.get("timestamp")
@@ -109,8 +95,7 @@ class CodexCollector(Collector):
         start_time = to_local(min(timestamps))
         end_time = to_local(max(timestamps))
 
-        # Codex date is in filename, but double check with content timestamps
-        if start_time.date() != target_date and end_time.date() != target_date:
+        if not overlaps_target_date(start_time, end_time, target_date):
             return None
 
         title = first_prompt[:120] if first_prompt else ""

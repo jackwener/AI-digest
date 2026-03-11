@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import List, Optional
 
 from digest.collectors.base import Collector
-from digest.models import NormalizedSession, to_local
+from digest.models import NormalizedSession, overlaps_target_date, to_local
 
 
 class AntigravityCollector(Collector):
@@ -144,7 +144,7 @@ class AntigravityCollector(Collector):
         start_time = to_local(min(timestamps))
         end_time = to_local(max(timestamps))
 
-        if start_time.date() != target_date and end_time.date() != target_date:
+        if not overlaps_target_date(start_time, end_time, target_date):
             return None
 
         full_context = "\n".join(context_lines)
@@ -172,7 +172,7 @@ class AntigravityCollector(Collector):
         except (OSError, AttributeError):
             return None
 
-        if mtime.date() != target_date and ctime.date() != target_date:
+        if not overlaps_target_date(ctime, mtime, target_date):
             return None
 
         return NormalizedSession(

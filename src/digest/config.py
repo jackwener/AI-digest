@@ -18,6 +18,17 @@ class DigestConfig(BaseModel):
 def load_config(config_path: str = "config.yaml") -> DigestConfig:
     path = Path(os.path.expanduser(config_path))
     if not path.exists():
+        env_api_key = os.getenv("ANTHROPIC_API_KEY")
+        if env_api_key:
+            return DigestConfig(
+                ai=AIConfig(
+                    api_key=env_api_key,
+                    model=os.getenv("ANTHROPIC_MODEL", "claude-3-7-sonnet-latest"),
+                    base_url=os.getenv("ANTHROPIC_BASE_URL"),
+                    provider="anthropic",
+                )
+            )
+
         # Auto-create template if missing
         path.parent.mkdir(parents=True, exist_ok=True)
         template = {
@@ -34,5 +45,17 @@ def load_config(config_path: str = "config.yaml") -> DigestConfig:
     
     with open(path, "r") as f:
         data = yaml.safe_load(f)
-    
-    return DigestConfig(**data)
+
+    if not data:
+        raise ValueError(f"Config file {path} is empty.")
+
+    config = DigestConfig(**data)
+
+    if config.ai.provider.lower() == "anthropic" and config.ai.api_key == "YOUR_API_KEY":
+        env_api_key = os.getenv("ANTHROPIC_API_KEY")
+        if env_api_key:
+            config.ai.api_key = env_api_key
+            config.ai.model = os.getenv("ANTHROPIC_MODEL", config.ai.model)
+            config.ai.base_url = os.getenv("ANTHROPIC_BASE_URL", config.ai.base_url)
+
+    return config

@@ -11,6 +11,8 @@ from digest.models import NormalizedSession, DailySummary
 
 
 class Analyzer:
+    MAX_CONTEXT_CHARS = 60000
+
     def __init__(self, config: DigestConfig):
         self.config = config
 
@@ -18,22 +20,7 @@ class Analyzer:
         if not sessions:
             return None
 
-        # Prepare context
-        context_lines = []
-        for s in sessions:
-            time_str = s.start_time.strftime("%H:%M")
-            project_str = f" | Project: {s.project_path}" if s.project_path else ""
-            context_str = (
-                f"[{time_str}] Source: {s.source}{project_str}\n"
-                f"Title/Summary: {s.title_or_prompt}\n"
-                f"Messages: {s.message_count}\n"
-            )
-            if s.full_context:
-                context_str += f"Detailed Content:\n{s.full_context}\n"
-            context_str += "---"
-            context_lines.append(context_str)
-        
-        context_text = "\n".join(context_lines)
+        context_text = self._build_context_text(sessions)
 
         system_prompt = f"""
 你是一位专业的工程效率分析师。请分析用户当天与各 AI Agent 的交互日志，生成一份详细的中文每日工作摘要。
@@ -170,3 +157,50 @@ JSON 输出格式示例：
         except (json.JSONDecodeError, ValueError) as e:
             print(f"Failed to parse LLM response: {e}\nRaw output: {content}")
             return None
+
+    def _build_context_text(self, sessions: List[NormalizedSession]) -> str:
+        context_lines = []
+        remaining = self.MAX_CONTEXT_CHARS
+
+        for session in sessions:
+            time_str = session.start_time.strftime("%H:%M")
+            project_str = f" | Project: {session.project_path}" if session.project_path else ""
+            header = (
+                f"[{time_str}] Source: {session.source}{project_str}\n"
+                f"Title/Summary: {session.title_or_prompt}\n"
+                f"Messages: {session.message_count}\n"
+            )
+            if len(header) >= remaining:
+                break
+
+            context_lines.append(header)
+            remaining -= len(header)
+
+            if session.full_context and remaining > 0:
+                block_prefix = "Detailed Content:\n"
+                if len(block_prefix) < remaining:
+                    snippet, truncated = self._truncate_text(session.full_context, remaining - len(block_prefix) - 1)
+                    block = f"{block_prefix}{snippet}\n"
+                    context_lines.append(block)
+                    remaining -= len(block)
+
+            separator = "---"
+            if len(separator) >= remaining:
+                break
+            context_lines.append(separator)
+            remaining -= len(separator) + 1
+
+            if remaining <= 0:
+                break
+
+        return "\n".join(context_lines)
+
+    def _truncate_text(self, text: str, available: int) -> tuple[str, bool]:
+        suffix = "\n...[Truncated]"
+        if available <= 0:
+            return "", bool(text)
+        if len(text) <= available:
+            return text, False
+        if available <= len(suffix):
+            return suffix[:available], True
+        return text[: available - len(suffix)].rstrip() + suffix, True

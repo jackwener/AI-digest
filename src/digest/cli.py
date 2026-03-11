@@ -79,8 +79,11 @@ def cmd_collect(args):
 
     for s in sessions:
         start_str = s.start_time.strftime("%H:%M")
-        end_str = s.end_time.strftime("%H:%M")
-        time_str = f"{start_str} - {end_str}" if start_str != end_str else start_str
+        if s.start_time.date() != s.end_time.date():
+            end_str = s.end_time.strftime("%m-%d %H:%M")
+        else:
+            end_str = s.end_time.strftime("%H:%M")
+        time_str = f"{start_str} - {end_str}" if s.start_time != s.end_time else start_str
         color = source_colors.get(s.source, "white")
         title = s.title_or_prompt.replace("\n", " ").strip()
         if len(title) > 80:

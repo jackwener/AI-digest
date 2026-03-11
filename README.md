@@ -54,10 +54,12 @@ cp config.example.yaml config.yaml
 ```yaml
 ai:
   api_key: "your-api-key"
-  model: "gpt-4o-mini"
-  base_url: "https://api.openai.com/v1"  # 可选，自定义 endpoint
-  provider: "openai"                      # openai | anthropic
+  model: "claude-3-7-sonnet-latest"
+  base_url: null                          # 可选，默认按 provider 选择 endpoint
+  provider: "anthropic"                   # openai | anthropic
 ```
+
+如果没有 `config.yaml`，也可以直接设置 `ANTHROPIC_API_KEY` 启动，程序会默认按 `anthropic` provider 读取 `ANTHROPIC_MODEL` / `ANTHROPIC_BASE_URL`。
 
 支持任何 OpenAI 或 Anthropic 兼容的 API 服务。
 
