@@ -68,7 +68,7 @@ ai:
 | Claude Code | `~/.claude/projects/` | JSONL (明文) |
 | Codex | `~/.codex/sessions/` | JSONL (明文) |
 | Antigravity | `~/.gemini/antigravity/brain/` | Artifacts + JSON metadata |
-| OpenCode | `~/Library/Application Support/ai.opencode.desktop/` | JSON DAT |
+| OpenCode | `~/.local/share/opencode/opencode.db` (preferred) or `~/Library/Application Support/ai.opencode.desktop/` | SQLite / JSON DAT |
 | Gemini CLI | `~/.gemini/history/` | Directory mtime |
 
 ## 输出示例
